@@ -1,0 +1,92 @@
+<html>
+<head>
+    <title>Application</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css"
+          integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+    <!--<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>-->
+    <script type="application/javascript" src="https://unpkg.com/vue@2.4.2"></script>
+</head>
+<body>
+<div id="app">
+    {{ message }}
+</div>
+</body>
+<script>
+    'use strict';
+    class Validator {
+        constructor(message, attribute) {
+            this.message = message;
+            this.attribute = attribute;
+            this.validation = false;
+        }
+
+        validate() {
+        }
+    };
+
+    class ValidatorMin extends Validator {
+        constructor(rule, attribute) {
+            super(rule.message, attribute);
+            this.lenghtChar = rule.lengthChars || null;
+            console.log(rule.message);
+        }
+
+        validate() {
+            this.validation = this.attribute.length > this.lengthChars;
+            return this.validation
+        }
+
+        isValid() {
+            return this.validation;
+        }
+
+        getError() {
+            return this.message
+        }
+    }
+
+    var validatorFabric = {
+        min: ValidatorMin,
+
+        getValidator(rule, attribute) {
+            if (this[rule.type]) {
+                return new this[rule.type](rule, attribute);
+            }
+        }
+    };
+
+    var app = new Vue({
+        el: '#app',
+        data: () => {
+            return {
+                message: 'Hello world'
+            }
+        }
+    });
+
+
+    var str = 'Check!';
+    var errors = [];
+    var rules = [
+        {type: 'min', lengthChars: 7, message: 'Must be Min %s length'},
+//        {type: 'max', lengthChars: 5, message: 'bla'},
+//        {type: 'didget', all: true, position: null, symbol: null, beetwen: {start: 1, end: 100}, message: 'Must be between'},
+//        {type: 'character', all: false, position: 4, symbol: 'Z' ,message: 'blva'},
+//        {type: 'character', all: false, position: 3, symbol: null, message: 'bla'},
+//        {type: 'character', all: true, position: null, symbol: null, message: 'bla'},
+//
+//        {type: 'didget', all: true, position: null, symbol: null, message: 'bla'},
+//        {type: 'didget', all: false, position: 3, symbol: 3, message: 'bla'},
+//        {type: 'didget', all: false, position: 3, symbol: null, message: 'bla'},
+    ];
+
+    rules.forEach((rule, i, arr) => {
+        let validator = validatorFabric.getValidator(rule, str);
+        if (!validator.validate()) {
+            console.log(validator);
+            errors.push(validator.getError());
+        }
+    });
+    console.log(errors);
+</script>
+</html>
