@@ -6,11 +6,143 @@
     <!--<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>-->
     <script type="application/javascript" src="https://unpkg.com/vue@2.4.2"></script>
 </head>
+<style>
+    .offset-top {
+        margin-top: 120px;
+    }
+
+    .text-align-center {
+        vertical-align: middle;
+    }
+    .has-error {
+        color: red;
+    }
+</style>
 <body>
 <div id="app">
-    {{ message }}
+    <div class="container offset-top">
+        <div class="row">
+            <div class="col-md-12">
+                <h2 class="text-center">Rules</h2>
+            </div>
+            <div class="col-md-12">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Rule Type</th>
+                        <th>All input</th>
+                        <th>Special char</th>
+                        <th>Position of Char</th>
+                        <th>Input must be min length</th>
+                        <th>Input must be max length</th>
+                        <th>Message</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="rule in rules">
+                        <td>{{rule.type}}</td>
+                        <td>{{rule.all ? 'Yes' : 'No'}}</td>
+                        <td>{{rule.symbol || '-'}}</td>
+                        <td>{{rule.position || '-'}}</td>
+                        <td>{{rule.type === 'min' ? rule.lengthChars : '-'}}</td>
+                        <td>{{rule.type === 'max' ? rule.lengthChars : '-'}}</td>
+                        <td>{{rule.message || '-'}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <h1 class="text-center">Input Validator Creator</h1>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12 col-sm-offset-2">
+                <form class="form-horizontal" @submit.prevent="submit">
+                    <fieldset>
+                    <!--type-->
+                    <div class="form-group">
+                        <select class="form-control" v-model="rule.type">
+                            <option disabled value="">Select Validator Type</option>
+                            <option :value="type" v-for="type in types">{{type}}</option>
+                        </select>
+                    </div>
+
+                    <!--all-->
+                    <div class="form-group" v-if="isRuleType(['digit', 'character'])">
+                        <label for="all" class="text-align-center">Whole input must be {{ rule.type }}(s)</label>
+                        <input type="checkbox" id="all" :value="rule.all" v-model="rule.all">
+                    </div>
+
+                    <!--length-->
+                    <div class="form-group" v-if="isRuleType(['min', 'max'])">
+                        <input type="number" class="form-control" v-model="rule.lengthChars"
+                               placeholder="Length user input">
+                    </div>
+
+                    <!--between checkbox-->
+                    <div class="form-group" v-if="isRuleType('digit')">
+                        <label for="between" class="text-align-center">Between Number</label>
+                        <input type="checkbox" id="between" :value="rule.isBetween" v-model="rule.isBetween">
+                    </div>
+
+                    <!--between-->
+                    <div class="form-group" v-if="rule.isBetween">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <input type="number" class="form-control " v-model="rule.between.start"
+                                       placeholder="Input must be more then">
+
+                            </div>
+                            <div class="col-md-6">
+                                <input type="number" class="form-control " v-model="rule.between.end"
+                                       placeholder="Input must be less then">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--symbol-->
+                    <div class="form-group" v-if="isRuleType('character') && !rule.all">
+                        <input type="text" class="form-control" v-model="rule.symbol" placeholder="Type Special symbol">
+                    </div>
+
+                    <!--number-->
+                    <div class="form-group" v-if="isRuleType('character') && !rule.all">
+                        <input type="number" class="form-control" v-model="rule.position"
+                               placeholder="Symbol must be in position">
+                    </div>
+                    <!--message-->
+                    <div class="form-group">
+                        <input type="text" class="form-control" v-model="rule.message"
+                               placeholder="Error message on validation failed">
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary pull-left">Submit rule</button>
+                        <a href="#" class="btn btn-primary pull-right" @click.prevent="apply">Apply Rules to input</a>
+                    </div>
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <h2 class="text-center">User Input</h2>
+            </div>
+            <div class="col-md-12" :class="{'has-error': validator.hasErrors() }">
+                <input type="text" class="form-control" v-model="message"/>
+                <div class="error">
+                    <div v-if="validator.firstError">{{ validator.getError()}}</div>
+                    <div v-else><p v-for="error in validator.getErrors()"> {{ error}} </p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 </body>
+
 <script>
     'use strict';
     class Validator {
@@ -18,22 +150,10 @@
             this.message = message;
             this.attribute = attribute;
             this.validation = false;
+            this.name = 'Validator';
         }
 
         validate() {
-        }
-    };
-
-    class ValidatorMin extends Validator {
-        constructor(rule, attribute) {
-            super(rule.message, attribute);
-            this.lenghtChar = rule.lengthChars || null;
-            console.log(rule.message);
-        }
-
-        validate() {
-            this.validation = this.attribute.length > this.lengthChars;
-            return this.validation
         }
 
         isValid() {
@@ -45,48 +165,261 @@
         }
     }
 
-    var validatorFabric = {
-        min: ValidatorMin,
+    class ValidatorMin extends Validator {
 
-        getValidator(rule, attribute) {
-            if (this[rule.type]) {
-                return new this[rule.type](rule, attribute);
-            }
+        constructor(rule, attribute) {
+            super(rule.message, attribute);
+            this.name = 'Min';
+            this.lengthChars = rule.lengthChars || null;
         }
-    };
 
+        validate(input) {
+            this.validation = input.length > this.lengthChars;
+            return this.validation
+        }
+    }
+
+    class ValidatorMax extends Validator {
+
+        constructor(rule, attribute) {
+            super(rule.message, attribute);
+            this.name = 'Max';
+            this.lengthChars = rule.lengthChars || null;
+        }
+
+        validate(input) {
+            this.validation = input.length < this.lengthChars;
+            return this.validation;
+        }
+    }
+
+    class ValidatorDigit extends Validator {
+
+        constructor(rule, attribute) {
+            super(rule.message, attribute);
+            this.name = 'Digit';
+            this.all = rule.all;
+            this.position = rule.position;
+            this.between = {
+                start: parseInt(rule.between.start),
+                end: parseInt(rule.between.end),
+            };
+            this.symbol = rule.symbol;
+
+            this.isBetweenVal = rule.isBetween;
+            this.lengthChars = rule.lengthChars || null;
+        }
+
+        validate(input) {
+            if (this.isBetween()) {
+                this.validation = this.betweenValidate(input);
+            }
+            if (this.all) {
+                this.validation = input.isInteger();
+            }
+            return this.validation;
+        }
+
+        isBetween() {
+            return this.isBetweenVal;
+        }
+
+        betweenValidate(input) {
+            let number = parseInt(input);
+            return (this.between.start <= number) && (number <= this.between.end);
+        }
+    }
+
+    class ValidatorCharacter extends Validator {
+
+        constructor(rule, attribute) {
+            super(rule.message, attribute);
+            this.name = 'character';
+            this.all = rule.all;
+            this.position = rule.position;
+            this.between = rule.between;
+            this.symbol = rule.symbol;
+
+            this.isBetweenVal = rule.isBetween;
+            this.lengthChars = rule.lengthChars || null;
+        }
+
+        validate(input) {
+            if (this.all) {
+                this.validation = /^[a-zA-z]+$/i.test(input);
+            }
+            if (this.position && this.symbol) {
+                this.validation = input.indexOf(this.symbol) === (this.position - 1)
+            }
+            return this.validation;
+        }
+
+        isBetween() {
+            return this.isBetweenVal;
+        }
+
+        betweenValidate(input) {
+            return this.between.start < input < this.between.end;
+        }
+    }
+
+    class ValidatorService {
+
+        constructor(options) {
+            this.errors = [];
+            this.rules = [];
+            this.input = null;
+            this.firstError = options.firstError || false;
+            this.availableValidators = {
+                min: ValidatorMin,
+                max: ValidatorMax,
+                digit: ValidatorDigit,
+                character: ValidatorCharacter
+            };
+            this.validators = [];
+        }
+
+        clearErrors() {
+            this.errors = [];
+        }
+        hasErrors() {
+            return this.errors.length > 0;
+        }
+        getErrors() {
+            return this.errors
+        }
+
+        getError(index) {
+            return this.errors[index || 0];
+        }
+
+        setRules(rules) {
+            this.rules = rules;
+        }
+
+        setInput(input) {
+            this.input = input;
+        }
+
+        isHasValidators() {
+            return this.validators.length > 0;
+        }
+
+        validate(value) {
+
+            this.setInput(value);
+            this.clearErrors();
+            if (!this.isHasValidators()) {
+                this.createValidators();
+            }
+            this.getValidators().forEach((validator) => {
+                console.log(validator.name + ' is validate ' + validator.validate(this.input));
+                if (!validator.validate(this.input)) {
+                    this.errors.push(validator.getError());
+                }
+            });
+        }
+
+        createValidators() {
+            this.rules.forEach((rule, i, arr) => {
+                if (this.availableValidators[rule.type]) {
+                    this.validators.push(new this.availableValidators[rule.type](rule, this.input));
+                }
+            });
+        }
+
+        getValidators() {
+            return this.validators;
+        }
+    }
     var app = new Vue({
         el: '#app',
         data: () => {
             return {
-                message: 'Hello world'
+                message: null,
+                errors: [],
+                rule: {
+                    type: "",
+                    all: false,
+                    lengthChars: null,
+                    position: null,
+                    isBetween: false,
+                    between: {
+                        start: null,
+                        end: null,
+                    },
+                    symbol: null,
+                    message: null,
+                },
+                rules: [],
+                types: [
+                    'min',
+                    'max',
+                    'character',
+                    'digit'
+                ],
+                validator: new ValidatorService({
+                    firstError: false
+                })
+            }
+        },
+        methods: {
+            isRuleType(type) {
+                let answer = false;
+                if (type instanceof Array) {
+                    type.forEach((item, i, arr) => {
+                        if (item === this.rule.type) {
+                            answer = true;
+                        }
+                    });
+                } else {
+                    answer = type === this.rule.type
+                }
+                return answer;
+            },
+            isNormalRule(rule) {
+                return this.types.indexOf(rule.type) !== -1;
+            },
+            submit() {
+                if (this.isNormalRule(this.rule)) {
+                    this.rules.push(this.rule);
+
+                    this.rule = {
+                        type: "",
+                        all: false,
+                        lengthChars: null,
+                        position: null,
+                        isBetween: false,
+                        between: {
+                            start: null,
+                            end: null,
+                        },
+                        symbol: null,
+                        message: null,
+                    };
+                }
+            },
+            apply() {
+                this.validator.setRules(this.rules);
+            },
+            validate(val) {
+                this.validator.validate(val)
+            }
+        },
+        watch: {
+            message(newVal) {
+                this.validate(newVal);
+            },
+            'rule.type'(newVal) {
+                this.rule.all = false;
+                this.rule.lengthChars = null;
+                this.rule.position = null;
+                this.rule.isBetween = null;
+                this.rule.between = {start: null, end: null};
+                this.rule.symbol = null;
+                this.rule.message = null;
             }
         }
     });
-
-
-    var str = 'Check!';
-    var errors = [];
-    var rules = [
-        {type: 'min', lengthChars: 7, message: 'Must be Min %s length'},
-//        {type: 'max', lengthChars: 5, message: 'bla'},
-//        {type: 'didget', all: true, position: null, symbol: null, beetwen: {start: 1, end: 100}, message: 'Must be between'},
-//        {type: 'character', all: false, position: 4, symbol: 'Z' ,message: 'blva'},
-//        {type: 'character', all: false, position: 3, symbol: null, message: 'bla'},
-//        {type: 'character', all: true, position: null, symbol: null, message: 'bla'},
-//
-//        {type: 'didget', all: true, position: null, symbol: null, message: 'bla'},
-//        {type: 'didget', all: false, position: 3, symbol: 3, message: 'bla'},
-//        {type: 'didget', all: false, position: 3, symbol: null, message: 'bla'},
-    ];
-
-    rules.forEach((rule, i, arr) => {
-        let validator = validatorFabric.getValidator(rule, str);
-        if (!validator.validate()) {
-            console.log(validator);
-            errors.push(validator.getError());
-        }
-    });
-    console.log(errors);
 </script>
 </html>
